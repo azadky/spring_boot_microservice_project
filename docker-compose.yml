@@ -1,0 +1,84 @@
+services:
+  mysql:
+    container_name: mysql
+    image: mysql:8
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: microservice_db
+      MYSQL_USER: azad
+      MYSQL_PASSWORD: azad
+    ports:
+      - "3306:3306"
+    networks:
+      - backend
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  config-server:
+    build: ./config-server
+    ports:
+      - "8888:8888"
+    networks:
+      - backend
+    depends_on:
+      - mysql
+
+  discovery:
+    build: ./discovery
+    ports:
+      - "8761:8761"
+    networks:
+      - backend
+    depends_on:
+      - mysql
+      - config-server
+
+  gateway:
+    build: ./gateway
+    ports:
+      - "8222:8222"
+    networks:
+      - backend
+    depends_on:
+      - discovery
+      - config-server
+
+  student:
+    build: ./student
+    ports:
+      - "8090:8090"
+    networks:
+      - backend
+    depends_on:
+      - mysql
+      - discovery
+      - config-server
+
+  school:
+    build: ./school
+    ports:
+      - "8070:8070"
+    networks:
+      - backend
+    depends_on:
+      - mysql
+      - discovery
+      - config-server
+
+  zipkin:
+    container_name: zipkin
+    image: openzipkin/zipkin
+    ports:
+      - "9411:9411"
+    networks:
+      - zipkin
+
+networks:
+  backend:
+    driver: bridge
+  zipkin:
+    driver: bridge
+
+volumes:
+  mysql_data:
